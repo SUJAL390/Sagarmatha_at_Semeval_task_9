@@ -134,7 +134,7 @@ Research use only.
 
 ## 📜 License
 
-MIT License (TBD)
+MIT License
 
 ---
 
@@ -144,5 +144,6 @@ MIT License (TBD)
 [sujalmaharjan007@gmail.com]
 
 ---
+
 
 ⭐ If this repository helps your research, please consider starring it.
