@@ -15,22 +15,20 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import f1_score, log_loss
 from tqdm.auto import tqdm
 
-
-
 class Config:
     SEED = 42
     MAX_LEN = 128
     BATCH_SIZE = 16
     VAL_SPLIT = 0.10
     
-    LABELS_S2 = ['political', 'racial/ethnic', 'religious', 'gender/sexual', 'other']
-    LABELS_S3 = ['stereotype', 'vilification', 'dehumanization', 'extreme_language', 'lack_of_empathy', 'invalidation']
+    LABELS_S2 =['political', 'racial/ethnic', 'religious', 'gender/sexual', 'other']
+    LABELS_S3 =['stereotype', 'vilification', 'dehumanization', 'extreme_language', 'lack_of_empathy', 'invalidation']
     
     OUTPUT_ROOT = "./10_technique_submissions"
 
 # Path Finder
 def find_model_path(filename, search_hint=None):
-    exact_candidates = [
+    exact_candidates =[
         f"../input/{search_hint}/{filename}" if search_hint else "",
         f"../input/task9-benchmarks/{filename}",
         f"../input/load-polar-4bestmodels/final_best_models/{filename}",
@@ -46,7 +44,7 @@ def find_model_path(filename, search_hint=None):
     return None
 
 def find_data_root():
-    candidates = ["../input/semevaltask9-testphase-data/semeval_polar_testphase", "../input/semeval_polar_testphase"]
+    candidates =["../input/semevaltask9-testphase-data/semeval_polar_testphase", "../input/semeval_polar_testphase"]
     for c in candidates:
         if os.path.exists(c): return c
     for root, dirs, files in os.walk("../input"):
@@ -58,7 +56,7 @@ Config.DATA_ROOT = find_data_root()
 
 def load_data(mode="train"):
     print(f">>> Loading {mode.upper()} Data...")
-    dfs = []
+    dfs =[]
     search_path = os.path.join(Config.DATA_ROOT, f"subtask1/{mode}")
     if not os.path.exists(search_path): search_path = os.path.join(Config.DATA_ROOT, f"subtask_1/{mode}")
     if not os.path.exists(search_path): search_path = os.path.join(Config.DATA_ROOT, f"subtask2/{mode}")
@@ -97,12 +95,11 @@ class PolarDataset(Dataset):
         return {k: torch.tensor(v) for k,v in enc.items()}
 
 
-
 MODEL_MAP = {
     "mdeberta_s1": { "hf": "microsoft/mdeberta-v3-base", "file": "best_microsoft_mdeberta-v3-base.pth", "type": "benchmark", "tasks": ["s1"] },
     "mdeberta_s23": { "hf": "microsoft/mdeberta-v3-base", "file": "best_model.pth", "hint": "task9_semeval3", "type": "grandmaster", "tasks": ["s2", "s3"] },
-    "xlm-roberta": { "hf": "xlm-roberta-base", "file": "best_xlm-roberta.pth", "type": "grandmaster", "tasks": ["s1", "s2", "s3"] },
-    "labse": { "hf": "sentence-transformers/LaBSE", "file": "best_labse.pth", "type": "grandmaster", "tasks": ["s1", "s2", "s3"] },
+    "xlm-roberta": { "hf": "xlm-roberta-base", "file": "best_xlm-roberta.pth", "type": "grandmaster", "tasks":["s1", "s2", "s3"] },
+    "labse": { "hf": "sentence-transformers/LaBSE", "file": "best_labse.pth", "type": "grandmaster", "tasks":["s1", "s2", "s3"] },
     "mmbert": { "hf": "jhu-clsp/mmBERT-base", "file": "best_mmbert.pth", "type": "grandmaster", "tasks": ["s1", "s2", "s3"] },
     "rembert": { "hf": "google/rembert", "file": "best_rembert.pth", "type": "grandmaster", "tasks": ["s1", "s2", "s3"] }
 }
@@ -111,7 +108,7 @@ def safe_forward(backbone, config, input_ids, attention_mask, token_type_ids=Non
     inputs = {"input_ids": input_ids, "attention_mask": attention_mask}
     if token_type_ids is not None:
         model_type = getattr(config, "model_type", "").lower()
-        if not any(x in model_type for x in ["modern", "roberta", "rembert", "distilbert"]):
+        if not any(x in model_type for x in["modern", "roberta", "rembert", "distilbert"]):
             inputs["token_type_ids"] = token_type_ids
     return backbone(**inputs)
 
@@ -132,7 +129,6 @@ class GrandmasterModel(nn.Module):
         super().__init__()
         self.config = AutoConfig.from_pretrained(model_name, trust_remote_code=True)
         
-   
         self.config.output_hidden_states = True 
         
         self.backbone = AutoModel.from_pretrained(model_name, config=self.config, trust_remote_code=True)
@@ -144,7 +140,6 @@ class GrandmasterModel(nn.Module):
     def forward(self, input_ids, attention_mask, token_type_ids=None, **kwargs):
         out = safe_forward(self.backbone, self.config, input_ids, attention_mask, token_type_ids)
         
-      
         states = torch.stack(list(out.hidden_states)[-5:], 0)
         feat = self.drop((nn.functional.softmax(self.pooler_weights, 0).view(-1,1,1,1) * states).sum(0)[:, 0])
         o1 = self.h1(feat); o2 = self.h2(feat)
@@ -171,7 +166,6 @@ def generate_raw_predictions(df):
         
         model = BenchmarkModel(info['hf']) if info['type'] == 'benchmark' else GrandmasterModel(info['hf'])
         try:
-         
             st = torch.load(path, map_location=device, weights_only=False)
             if 'model' in st: st = st['model']
             st = {k.replace('module.', '').replace('model.', 'backbone.'): v for k,v in st.items()}
@@ -180,7 +174,7 @@ def generate_raw_predictions(df):
             print(f"      ❌ Error loading {key}: {e}")
             continue
         
-        model.to(device).eval(); p1, p2, p3 = [], [], []
+        model.to(device).eval(); p1, p2, p3 = [], [],[]
         with torch.no_grad():
             for b in tqdm(dl, leave=False):
                 b = {k: v.to(device) for k,v in b.items()}
@@ -199,8 +193,6 @@ def generate_raw_predictions(df):
         
     return raw_preds
 
-
-
 def run_strategy(name, raw_preds, val_df, test_df_ids, test_df_langs):
     print(f"\n🧪 [STRATEGY: {name.upper()}] Running...")
     
@@ -215,26 +207,6 @@ def run_strategy(name, raw_preds, val_df, test_df_ids, test_df_langs):
                         r = rankdata(p, axis=0) / len(p)
                         accum += r; cnt += 1
             return accum / cnt if cnt > 0 else accum
-
-        elif name == "08_Power_Mean":
-            accum = np.zeros(size)
-            cnt = 0
-            for k, v in preds_dict.items():
-                if task in MODEL_MAP[k]['tasks']:
-                    p = v[0] if task=='s1' else (v[1] if task=='s2' else v[2])
-                    if len(p) > 0:
-                        accum += p**2; cnt += 1
-            return np.sqrt(accum / cnt) if cnt > 0 else accum
-            
-        elif name == "09_Max_Recall":
-            accum = np.zeros(size)
-            for k, v in preds_dict.items():
-                if task in MODEL_MAP[k]['tasks']:
-                    p = v[0] if task=='s1' else (v[1] if task=='s2' else v[2])
-                    if len(p) > 0:
-                        accum = np.maximum(accum, p)
-            return accum
-
         else:
             accum = np.zeros(size)
             cnt = 0
@@ -244,7 +216,6 @@ def run_strategy(name, raw_preds, val_df, test_df_ids, test_df_langs):
                     if len(p) > 0:
                         weight = 1.0
                         if name == "06_Weighted_Specialist" and k == "mdeberta_s1" and task == "s1": weight = 2.0
-                        if name == "07_Weighted_Polyglot" and k in ["rembert", "mmbert"] and task in ["s2", "s3"]: weight = 1.5
                         accum += p * weight; cnt += weight
             return accum / cnt if cnt > 0 else accum
 
@@ -256,9 +227,8 @@ def run_strategy(name, raw_preds, val_df, test_df_ids, test_df_langs):
     y1, y2, y3 = val_df['polarization'].values, val_df[Config.LABELS_S2].values, val_df[Config.LABELS_S3].values
     vp1_c, vp2_c, vp3_c = np.clip(vp1, 1e-7, 1-1e-7), np.clip(vp2, 1e-7, 1-1e-7), np.clip(vp3, 1e-7, 1-1e-7)
     
-    
     th1, th2, th3 = 0.5, 0.35, 0.35 
-    if "Optimized" in name or "SOTA" in name or "Strict" in name or "Rescue" in name:
+    if "Strict" in name:
         best_f, best_t = 0, 0.5
         for t in np.arange(0.3, 0.7, 0.02):
             if f1_score(y1, (vp1>t).astype(int), average='macro') > best_f: best_f, best_t = f1_score(y1, (vp1>t).astype(int), average='macro'), t
@@ -269,14 +239,9 @@ def run_strategy(name, raw_preds, val_df, test_df_ids, test_df_langs):
         pred2 = (p2 > th2).astype(int)
         pred3 = (p3 > th3).astype(int)
         
-        if "Strict" in name or "Combo" in name or "SOTA" in name:
+        if "Strict" in name:
             pred2[pred1==0] = 0; pred3[pred1==0] = 0
             
-        if "Rescue" in name or "Combo" in name or "SOTA" in name:
-            mask = (pred1==1) & (pred2.sum(1)==0)
-            if mask.sum()>0: pred2[mask, p2[mask].argmax(1)] = 1
-            mask = (pred1==1) & (pred3.sum(1)==0)
-            if mask.sum()>0: pred3[mask, p3[mask].argmax(1)] = 1
         return pred1, pred2, pred3
 
     val_pred1, val_pred2, val_pred3 = post_proc(vp1, vp2, vp3)
@@ -324,10 +289,11 @@ if __name__ == "__main__":
         'test': generate_raw_predictions(test_df)
     }
     
-    print("\n🚀 STEP 2: Running 10 Inference Strategies...")
-    strategies = ["01_Baseline_Fixed", "02_Optimized_Thresh", "03_Strict_Hierarchy", "04_Rescue_Mode", "05_SOTA_Combo", "06_Weighted_Specialist", "07_Weighted_Polyglot", "08_Power_Mean", "09_Max_Recall", "10_Rank_Average"]
+    print("\n🚀 STEP 2: Running 3 Inference Strategies...")
+    # The 3 desired methods kept representing: Hierarchical Attention, Weighted Layer Pooling, and Ensemble Average
+    strategies =["03_Strict_Hierarchy", "06_Weighted_Specialist", "10_Rank_Average"]
     
     for strat in strategies:
         run_strategy(strat, cache, val_df, test_df['id'].values, test_df['lang'].values)
         
-    print("\n🏁 ALL 10 TECHNIQUES COMPLETE. DOWNLOAD ZIPS FROM OUTPUT.")
+    print("\n🏁 ALL 3 TECHNIQUES COMPLETE. DOWNLOAD ZIPS FROM OUTPUT.")
