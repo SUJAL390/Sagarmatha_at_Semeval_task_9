@@ -290,7 +290,7 @@ if __name__ == "__main__":
     }
     
     print("\n🚀 STEP 2: Running 3 Inference Strategies...")
-    # The 3 desired methods kept representing: Hierarchical Attention, Weighted Layer Pooling, and Ensemble Average
+
     strategies =["03_Strict_Hierarchy", "06_Weighted_Specialist", "10_Rank_Average"]
     
     for strat in strategies:
